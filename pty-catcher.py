@@ -1,4 +1,11 @@
 import socket
+import select
+import os
+import termios
+import tty
+import signal
+import argparse
+
 
 def build_listener(host, port):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -9,9 +16,20 @@ def build_listener(host, port):
 
 
 s = build_listener("0.0.0.0", 4444)
+
+
 print("[*] listening on 4444")
 conn, addr = s.accept()
-print(f"[+] connection from {addr}")
+while True:
+    r, _, _ = select.select([0, conn], [], [])
+    for fd in r:
+        if fd == 0:
+            data = os.read(0, 4096)
+            conn.sendall(data) 
+        else:
+            data = conn.recv(4096)
+            if not data:
+                break
+            os.write(1, data)   
 
-data = conn.recv(4096)
-print("got:", data)
+
